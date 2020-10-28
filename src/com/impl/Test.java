@@ -33,10 +33,11 @@ public class Test {
 		listaTransazioni("14537780","2019-01-01","2019-12-01");
 		System.out.println("");
 		System.out.println("---------------------------------------------------------------------------------------------------");
-		
-		
-		//transfers();
-		
+		System.out.println("");
+		System.out.println("Bonifico dal conto 14537780");
+		transfers("14537780","John Doe","Payment invoice","EUR","800","2019-04-01");
+		System.out.println("");
+		System.out.println("---------------------------------------------------------------------------------------------------");
 	}
 
 	public static void saldo(String accounts) {
@@ -126,9 +127,13 @@ public class Test {
 		}
 	}
 		
-	public static void transfers() {
+	public static void transfers(String accounts, String nomeBen, String causale, String currency, String amount, String executionDate) {
 		try{
-			URL url = new URL("https://sandbox.platfr.io/api/gbs/banking/v4.0/accounts/14537780/payments/money-transfers");
+			StringBuilder urlS = new StringBuilder("https://sandbox.platfr.io/api/gbs/banking/v4.0/accounts/");
+			urlS.append(accounts);
+			urlS.append("/payments/money-transfers");
+			URL url = new URL(urlS.toString());
+			
 	        HttpURLConnection conn = (HttpURLConnection)  url.openConnection();
 	        conn.setDoOutput(true);
 	        conn.setRequestMethod("POST");
@@ -140,16 +145,16 @@ public class Test {
             
             String body = "{\r\n" + 
             		"  \"creditor\":{\r\n" + 
-            		"    \"name\":\"John Doe\",\r\n" + 
+            		"    \"name\":\"" + nomeBen +"\",\r\n" + 
             		"    \"account\":{\r\n" + 
             		"      \"accountCode\":\"IT23A0336844430152923804660\",\r\n" + 
             		"      \"bicCode\": \"SELBIT2BXXX\"\r\n" + 
             		"    }\r\n" + 
             		"  },\r\n" + 
-            		"  \"executionDate\":\"2019-04-01\",\r\n" + 
-            		"  \"description\":\"Payment invoice\",\r\n" + 
-            		"  \"amount\":800,\r\n" + 
-            		"  \"currency\":\"EUR\"\r\n" + 
+            		"  \"executionDate\":\"" + executionDate + "\",\r\n" + 
+            		"  \"description\":\"" + causale + "\",\r\n" + 
+            		"  \"amount\":"+ amount +",\r\n" + 
+            		"  \"currency\":\""+ currency + "\"\r\n" + 
             		"}";
             OutputStream os = conn.getOutputStream();
             os.write(body.getBytes());
@@ -164,7 +169,14 @@ public class Test {
             	    response += line;
             	}
             	
-            	System.out.println(response);
+            	JSONParser parse = new JSONParser();
+				JSONObject data_obj = (JSONObject) parse.parse(response.toString());
+				JSONArray obj = (JSONArray) data_obj.get("errors");
+				for (Object o : obj) {
+					if (o instanceof JSONObject) {
+						System.out.println("Errore : " + ((JSONObject) o).get("description"));
+					}
+				}
             } else if (conn.getResponseCode() != 200 && conn.getResponseCode() != 400) {
             	throw new RuntimeException("Failed : HTTP Error code : "
                         + conn.getResponseCode());
